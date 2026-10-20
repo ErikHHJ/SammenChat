@@ -35,11 +35,11 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
         <ul className="brand-points">
           <li>
             <strong>Tavle</strong>
-            <span>Oppslag for studentbyen, blokken og etasjen. Betalte plasseringer på Fantoft kommer fra arrangører. I blokken kan du legge ut et arrangement.</span>
+            <span>På Fantoft viser tavlen betalte plasseringer. I blokken og etasjen kan du legge ut selv.</span>
           </li>
           <li>
             <strong>Chat</strong>
-            <span>Samtalen som skjer nå, adskilt fra tavlen.</span>
+            <span>På Fantoft er chatten der beboere skriver. Ellers er den adskilt fra tavlen.</span>
           </li>
           <li>
             <strong>Direktemeldinger</strong>

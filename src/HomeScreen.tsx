@@ -37,7 +37,7 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
   const messages = state.messages;
 
   const spacePosts = posts
-    .filter((post) => post.spaceId === space?.id)
+    .filter((post) => post.spaceId === space?.id && (space?.kind !== "neighborhood" || post.ad))
     .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || b.createdAt.localeCompare(a.createdAt));
 
   const spaceMessages = messages
@@ -112,7 +112,7 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
   function publishPost(formEvent: FormEvent) {
     formEvent.preventDefault();
     const body = draftPost.trim();
-    if (!body || space.kind === "dm") return;
+    if (!body || space.kind === "dm" || space.kind === "neighborhood") return;
     const asEvent = space.kind === "building" && postKind === "event";
     const post: Post = {
       id: crypto.randomUUID(),
@@ -304,6 +304,9 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
 
         {showBoard && tab === "board" ? (
           <section className="panel" role="tabpanel">
+            {space.kind === "neighborhood" ? (
+              <p className="board-note">Beboere skriver i chatten. Her ligger betalte plasseringer.</p>
+            ) : (
             <form className="composer" onSubmit={publishPost}>
               <Avatar user={user} />
               <div className="composer-fields">
@@ -337,6 +340,7 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
                 </div>
               </div>
             </form>
+            )}
 
             {spacePosts.length === 0 ? (
               <div className="empty">

@@ -1,7 +1,7 @@
 import { seedMessages, seedOpenedDmIds, seedPosts } from "./data";
 import type { AppState, Post } from "./types";
 
-const STATE_KEY = "sammen-v5";
+const STATE_KEY = "sammen-v6";
 const SESSION_KEY = "sammen-session";
 
 function isPost(value: unknown): value is Post {
