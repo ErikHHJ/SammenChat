@@ -109,10 +109,11 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
     openSpace(id, "dm");
   }
 
-  function publishPost(event: FormEvent) {
-    event.preventDefault();
+  function publishPost(formEvent: FormEvent) {
+    formEvent.preventDefault();
     const body = draftPost.trim();
     if (!body || space.kind === "dm") return;
+    const asEvent = space.kind === "building" && postKind === "event";
     const post: Post = {
       id: crypto.randomUUID(),
       spaceId: space.id,
@@ -120,7 +121,7 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
       body,
       createdAt: new Date().toISOString(),
       pinned: postKind === "announcement" || undefined,
-      event: postKind === "event" || undefined,
+      event: asEvent || undefined,
       going: [],
     };
     persist({ ...state, posts: [post, ...posts] });
@@ -163,6 +164,7 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
   }
 
   const showBoard = space.kind !== "dm";
+  const canPostEvent = space.kind === "building";
   const activeSpaceId = showProfile ? "" : space.id;
 
   function openFixed(kind: SpaceKind) {
@@ -311,7 +313,7 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
                 <textarea
                   id="post-body"
                   rows={3}
-                  placeholder={postKind === "event" ? "Skriv om arrangementet" : "Skriv et innlegg til tavlen"}
+                  placeholder={canPostEvent && postKind === "event" ? "Skriv om arrangementet" : "Skriv et innlegg til tavlen"}
                   value={draftPost}
                   onChange={(event) => setDraftPost(event.target.value)}
                 />
@@ -323,9 +325,11 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
                     <KindOption value="announcement" current={postKind} onPick={setPostKind}>
                       Oppslag
                     </KindOption>
-                    <KindOption value="event" current={postKind} onPick={setPostKind}>
-                      Arrangement
-                    </KindOption>
+                    {canPostEvent ? (
+                      <KindOption value="event" current={postKind} onPick={setPostKind}>
+                        Arrangement
+                      </KindOption>
+                    ) : null}
                   </div>
                   <button className="primary" type="submit" disabled={!draftPost.trim()}>
                     Publiser
@@ -579,24 +583,37 @@ function goingLabel(ids: string[], viewerId: string): string {
 }
 
 function PostCard({ post, viewerId, onToggleGoing }: { post: Post; viewerId: string; onToggleGoing: () => void }) {
-  const author = findUser(post.authorId);
+  const author = post.authorId ? findUser(post.authorId) : undefined;
   const going = post.going.includes(viewerId);
-  const className = ["post", post.pinned ? "pinned" : "", post.event ? "event" : ""].filter(Boolean).join(" ");
+  const className = ["post", post.ad ? "ad" : "", post.pinned ? "pinned" : "", post.event && !post.ad ? "event" : ""].filter(Boolean).join(" ");
 
   return (
     <article className={className}>
       <header>
-        {author ? <Avatar user={author} /> : <span className="avatar">?</span>}
+        {post.ad ? (
+          <span className="avatar org" style={{ background: post.ad.color }}>
+            {post.ad.mark}
+          </span>
+        ) : author ? (
+          <Avatar user={author} />
+        ) : (
+          <span className="avatar">?</span>
+        )}
         <div>
           <strong>
-            {author?.name ?? "Tidligere beboer"}
-            {post.authorId === viewerId ? <em>Deg</em> : null}
+            {post.ad?.name ?? author?.name ?? "Tidligere beboer"}
+            {!post.ad && post.authorId === viewerId ? <em>Deg</em> : null}
           </strong>
           <small>
-            {author ? `${author.program} · rom ${author.room}` : "Flyttet ut"} · {formatStamp(post.createdAt)}
+            {post.ad
+              ? post.ad.detail
+              : author
+                ? `${author.program} · rom ${author.room}`
+                : "Flyttet ut"}{" "}
+            · {formatStamp(post.createdAt)}
           </small>
         </div>
-        {post.event ? <span className="pin event">Arrangement</span> : post.pinned ? <span className="pin">Oppslag</span> : null}
+        {post.ad ? <span className="pin ad">Annonse</span> : post.event ? <span className="pin event">Arrangement</span> : post.pinned ? <span className="pin">Oppslag</span> : null}
       </header>
       <PostText body={post.body} />
       {post.event ? (

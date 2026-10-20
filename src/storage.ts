@@ -1,7 +1,7 @@
 import { seedMessages, seedOpenedDmIds, seedPosts } from "./data";
 import type { AppState, Post } from "./types";
 
-const STATE_KEY = "sammen-v4";
+const STATE_KEY = "sammen-v5";
 const SESSION_KEY = "sammen-session";
 
 function isPost(value: unknown): value is Post {
@@ -15,7 +15,8 @@ function normalize(state: AppState): AppState {
     posts: state.posts.filter(isPost).map((post) => ({
       id: post.id,
       spaceId: post.spaceId,
-      authorId: post.authorId,
+      authorId: typeof post.authorId === "string" ? post.authorId : undefined,
+      ad: post.ad && typeof post.ad.name === "string" ? post.ad : undefined,
       body: post.body,
       createdAt: post.createdAt,
       pinned: post.pinned || undefined,

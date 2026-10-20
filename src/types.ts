@@ -21,10 +21,18 @@ export type Space = {
 
 export type PostKind = "post" | "announcement" | "event";
 
+export type Ad = {
+  name: string;
+  detail: string;
+  mark: string;
+  color: string;
+};
+
 export type Post = {
   id: string;
   spaceId: string;
-  authorId: string;
+  authorId?: string;
+  ad?: Ad;
   body: string;
   createdAt: string;
   pinned?: boolean;

@@ -434,6 +434,11 @@ code {
 .person-search input::placeholder { color: #8ea399; }
 .search-empty { color: var(--sidebar-muted); font-size: 0.85rem; margin: 0.25rem 0.5rem 0.4rem; }
 .post.pinned, .post.event { background: linear-gradient(180deg, #fffaf3 0%, #fffdf8 40%); }
+.post.ad {
+  background: linear-gradient(180deg, #f3f8f5 0%, #fffdf8 46%);
+  border-color: #c5ddd0;
+}
+.avatar.org { border-radius: 12px; font-size: 0.78rem; }
 .pin {
   background: var(--clay-soft);
   color: var(--clay);
@@ -443,6 +448,7 @@ code {
   font-weight: 600;
 }
 .pin.event { background: var(--leaf-soft); color: var(--leaf-dark); }
+.pin.ad { background: #17382f; color: #f6f1e7; }
 
 .chat-layout {
   flex: 1;
