@@ -448,7 +448,12 @@ code {
   font-weight: 600;
 }
 .pin.event { background: var(--leaf-soft); color: var(--leaf-dark); }
-.pin.ad { background: #17382f; color: #f6f1e7; }
+.pin.ad {
+  background: #17382f;
+  color: #f6f1e7;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 
 .chat-layout {
   flex: 1;

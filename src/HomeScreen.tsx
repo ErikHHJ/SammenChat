@@ -613,7 +613,7 @@ function PostCard({ post, viewerId, onToggleGoing }: { post: Post; viewerId: str
             · {formatStamp(post.createdAt)}
           </small>
         </div>
-        {post.ad ? <span className="pin ad">Annonse</span> : post.event ? <span className="pin event">Arrangement</span> : post.pinned ? <span className="pin">Oppslag</span> : null}
+        {post.ad ? <span className="pin ad">Betalt plassering</span> : post.event ? <span className="pin event">Arrangement</span> : post.pinned ? <span className="pin">Oppslag</span> : null}
       </header>
       <PostText body={post.body} />
       {post.event ? (

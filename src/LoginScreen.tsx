@@ -35,7 +35,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
         <ul className="brand-points">
           <li>
             <strong>Tavle</strong>
-            <span>Oppslag for studentbyen, blokken og etasjen. Annonser på Fantoft kommer fra arrangører. I blokken kan du legge ut et arrangement.</span>
+            <span>Oppslag for studentbyen, blokken og etasjen. Betalte plasseringer på Fantoft kommer fra arrangører. I blokken kan du legge ut et arrangement.</span>
           </li>
           <li>
             <strong>Chat</strong>
