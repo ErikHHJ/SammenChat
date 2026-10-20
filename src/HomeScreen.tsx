@@ -27,7 +27,10 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
   const [draftMessage, setDraftMessage] = useState("");
   const [query, setQuery] = useState("");
   const [showProfile, setShowProfile] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
+  const [narrow, setNarrow] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
 
   const space = spaceById(user, spaceId) ?? fixedSpaces[0];
   const posts = state.posts;
@@ -57,6 +60,30 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
     }
   }, [tab, space?.id, space?.kind, spaceMessages.length]);
 
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 900px)");
+    const apply = () => setNarrow(media.matches);
+    apply();
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    const node = navRef.current;
+    if (!node) return;
+    if (narrow && !navOpen) node.setAttribute("inert", "");
+    else node.removeAttribute("inert");
+  }, [narrow, navOpen]);
+
+  useEffect(() => {
+    if (!navOpen) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setNavOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [navOpen]);
+
   if (!space) return null;
 
   function persist(next: AppState) {
@@ -66,6 +93,7 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
 
   function openSpace(id: string, nextKind?: SpaceKind) {
     setShowProfile(false);
+    setNavOpen(false);
     setSpaceId(id);
     setDraftPost("");
     setDraftMessage("");
@@ -151,18 +179,34 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
   const showBoard = space.kind !== "dm";
   const activeSpaceId = showProfile ? "" : space.id;
 
+  function openFixed(kind: SpaceKind) {
+    const target = fixedSpaces.find((item) => item.kind === kind);
+    if (target) openSpace(target.id, kind);
+  }
+
   return (
-    <div className="app">
-      <aside className="sidebar">
+    <div className={navOpen ? "app nav-open" : "app"}>
+      <button type="button" className="nav-backdrop" aria-label="Lukk meny" onClick={() => setNavOpen(false)} />
+      <aside className="sidebar" id="app-nav" ref={navRef} aria-hidden={narrow && !navOpen ? true : undefined}>
         <div className="side-brand">
           <span className="brand-mark small">S</span>
           <div>
             <strong>Sammen</strong>
             <small>Fantoft</small>
           </div>
+          <button type="button" className="nav-close" onClick={() => setNavOpen(false)}>
+            Lukk
+          </button>
         </div>
 
-        <button type="button" className={showProfile ? "me active" : "me"} onClick={() => setShowProfile(true)}>
+        <button
+          type="button"
+          className={showProfile ? "me active" : "me"}
+          onClick={() => {
+            setShowProfile(true);
+            setNavOpen(false);
+          }}
+        >
           <Avatar user={user} />
           <div>
             <strong>{user.name}</strong>
@@ -224,6 +268,12 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
       </aside>
 
       <main className="main">
+        <div className="mobile-bar">
+          <button type="button" className="menu-button" aria-expanded={navOpen} aria-controls="app-nav" onClick={() => setNavOpen(true)}>
+            <span className="menu-icon" aria-hidden="true" />
+            Meny
+          </button>
+        </div>
         {showProfile ? (
           <ProfilePage
             user={user}
@@ -335,6 +385,35 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
           </>
         )}
       </main>
+      <nav className="bottom-nav" aria-label="Hovedmeny">
+        <button type="button" className={!showProfile && space.kind === "neighborhood" ? "active" : ""} onClick={() => openFixed("neighborhood")}>
+          <KindMark kind="neighborhood" />
+          <span>Fantoft</span>
+        </button>
+        <button type="button" className={!showProfile && space.kind === "building" ? "active" : ""} onClick={() => openFixed("building")}>
+          <KindMark kind="building" name={fixedSpaces.find((item) => item.kind === "building")?.name} />
+          <span>Bygg</span>
+        </button>
+        <button type="button" className={!showProfile && space.kind === "floor" ? "active" : ""} onClick={() => openFixed("floor")}>
+          <KindMark kind="floor" />
+          <span>Etasje</span>
+        </button>
+        <button type="button" className={!showProfile && space.kind === "dm" ? "active" : ""} onClick={() => setNavOpen(true)}>
+          <KindMark kind="dm" />
+          <span>Meldinger</span>
+        </button>
+        <button
+          type="button"
+          className={showProfile ? "active" : ""}
+          onClick={() => {
+            setShowProfile(true);
+            setNavOpen(false);
+          }}
+        >
+          <Avatar user={user} small />
+          <span>Profil</span>
+        </button>
+      </nav>
     </div>
   );
 }
