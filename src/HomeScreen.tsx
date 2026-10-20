@@ -3,7 +3,7 @@ import type { FormEvent } from "react";
 import { buildingLabel, dmId, findUser, otherInDm, spaceById, spacesFor, users } from "./data";
 import { avatarColor, formatStamp, initials } from "./format";
 import { loadState, resetState, saveState } from "./storage";
-import type { AppState, Comment, Message, Post, Space, SpaceKind, User } from "./types";
+import type { AppState, Message, Post, PostKind, Space, SpaceKind, User } from "./types";
 
 const kindLabel: Record<SpaceKind, string> = {
   neighborhood: "Fellesskap",
@@ -23,7 +23,7 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
   const [spaceId, setSpaceId] = useState(fixedSpaces[0]?.id ?? "");
   const [tab, setTab] = useState<"board" | "chat">("board");
   const [draftPost, setDraftPost] = useState("");
-  const [announce, setAnnounce] = useState(false);
+  const [postKind, setPostKind] = useState<PostKind>("post");
   const [draftMessage, setDraftMessage] = useState("");
   const [query, setQuery] = useState("");
   const [showProfile, setShowProfile] = useState(false);
@@ -97,7 +97,7 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
     setSpaceId(id);
     setDraftPost("");
     setDraftMessage("");
-    setAnnounce(false);
+    setPostKind("post");
     if (nextKind === "dm") setTab("chat");
   }
 
@@ -119,13 +119,13 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
       authorId: user.id,
       body,
       createdAt: new Date().toISOString(),
-      pinned: announce || undefined,
-      likedBy: [],
-      comments: [],
+      pinned: postKind === "announcement" || undefined,
+      event: postKind === "event" || undefined,
+      going: [],
     };
     persist({ ...state, posts: [post, ...posts] });
     setDraftPost("");
-    setAnnounce(false);
+    setPostKind("post");
   }
 
   function sendMessage(event: FormEvent) {
@@ -143,26 +143,12 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
     setDraftMessage("");
   }
 
-  function toggleLike(postId: string) {
+  function toggleGoing(postId: string) {
     const nextPosts = posts.map((post) => {
       if (post.id !== postId) return post;
-      const liked = post.likedBy.includes(user.id);
-      return {
-        ...post,
-        likedBy: liked ? post.likedBy.filter((id) => id !== user.id) : [...post.likedBy, user.id],
-      };
+      const going = post.going.includes(user.id) ? post.going.filter((id) => id !== user.id) : [...post.going, user.id];
+      return { ...post, going };
     });
-    persist({ ...state, posts: nextPosts });
-  }
-
-  function addComment(postId: string, body: string) {
-    const comment: Comment = {
-      id: crypto.randomUUID(),
-      authorId: user.id,
-      body,
-      createdAt: new Date().toISOString(),
-    };
-    const nextPosts = posts.map((post) => (post.id === postId ? { ...post, comments: [...post.comments, comment] } : post));
     persist({ ...state, posts: nextPosts });
   }
 
@@ -325,15 +311,22 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
                 <textarea
                   id="post-body"
                   rows={3}
-                  placeholder="Skriv et innlegg til tavlen"
+                  placeholder={postKind === "event" ? "Skriv om arrangementet" : "Skriv et innlegg til tavlen"}
                   value={draftPost}
                   onChange={(event) => setDraftPost(event.target.value)}
                 />
                 <div className="composer-bar">
-                  <label className="check">
-                    <input type="checkbox" checked={announce} onChange={(event) => setAnnounce(event.target.checked)} />
-                    Merk som oppslag
-                  </label>
+                  <div className="kind-filter" role="radiogroup" aria-label="Type innlegg">
+                    <KindOption value="post" current={postKind} onPick={setPostKind}>
+                      Innlegg
+                    </KindOption>
+                    <KindOption value="announcement" current={postKind} onPick={setPostKind}>
+                      Oppslag
+                    </KindOption>
+                    <KindOption value="event" current={postKind} onPick={setPostKind}>
+                      Arrangement
+                    </KindOption>
+                  </div>
                   <button className="primary" type="submit" disabled={!draftPost.trim()}>
                     Publiser
                   </button>
@@ -349,7 +342,7 @@ export function HomeScreen({ user, onLogout }: HomeScreenProps) {
             ) : (
               <div className="feed">
                 {spacePosts.map((post) => (
-                  <PostCard key={post.id} post={post} viewerId={user.id} onLike={() => toggleLike(post.id)} onComment={(body) => addComment(post.id, body)} />
+                  <PostCard key={post.id} post={post} viewerId={user.id} onToggleGoing={() => toggleGoing(post.id)} />
                 ))}
               </div>
             )}
@@ -485,6 +478,7 @@ function ProfilePage({ user, posts, onOpenSpace }: { user: User; posts: Post[]; 
             <button key={post.id} type="button" className="own-post" onClick={() => onOpenSpace(post.spaceId)}>
               <small>
                 {postPlace(post.spaceId)} · {formatStamp(post.createdAt)}
+                {post.event ? " · Arrangement" : ""}
               </small>
               <p>{post.body}</p>
             </button>
@@ -536,31 +530,61 @@ function Avatar({ user, small, large, title }: { user: User; small?: boolean; la
   );
 }
 
-function PostCard({
-  post,
-  viewerId,
-  onLike,
-  onComment,
+function KindOption({
+  value,
+  current,
+  onPick,
+  children,
 }: {
-  post: Post;
-  viewerId: string;
-  onLike: () => void;
-  onComment: (body: string) => void;
+  value: PostKind;
+  current: PostKind;
+  onPick: (value: PostKind) => void;
+  children: string;
 }) {
-  const author = findUser(post.authorId);
-  const liked = post.likedBy.includes(viewerId);
-  const [draft, setDraft] = useState("");
+  const selected = value === current;
+  return (
+    <button type="button" role="radio" aria-checked={selected} className={selected ? "active" : ""} onClick={() => onPick(value)}>
+      {children}
+    </button>
+  );
+}
 
-  function submitComment(event: FormEvent) {
-    event.preventDefault();
-    const body = draft.trim();
-    if (!body) return;
-    onComment(body);
-    setDraft("");
-  }
+function PostText({ body }: { body: string }) {
+  const parts = body.split(/(https?:\/\/[^\s]+)/g);
+  return (
+    <p>
+      {parts.map((part, index) => {
+        if (!part.startsWith("http://") && !part.startsWith("https://")) return <span key={index}>{part}</span>;
+        const href = part.replace(/[.,)]+$/, "");
+        const trailing = part.slice(href.length);
+        return (
+          <span key={index}>
+            <a href={href} target="_blank" rel="noreferrer">
+              {href}
+            </a>
+            {trailing}
+          </span>
+        );
+      })}
+    </p>
+  );
+}
+
+function goingLabel(ids: string[], viewerId: string): string {
+  const names = ids.map((id) => (id === viewerId ? "Du" : findUser(id)?.name.split(" ")[0])).filter((name): name is string => Boolean(name));
+  const ordered = names.includes("Du") ? ["Du", ...names.filter((name) => name !== "Du")] : names;
+  if (ordered.length === 0) return "Ingen skal ennå";
+  if (ordered.length === 1) return `${ordered[0]} skal`;
+  return `${ordered.slice(0, -1).join(", ")} og ${ordered.at(-1)} skal`;
+}
+
+function PostCard({ post, viewerId, onToggleGoing }: { post: Post; viewerId: string; onToggleGoing: () => void }) {
+  const author = findUser(post.authorId);
+  const going = post.going.includes(viewerId);
+  const className = ["post", post.pinned ? "pinned" : "", post.event ? "event" : ""].filter(Boolean).join(" ");
 
   return (
-    <article className={post.pinned ? "post pinned" : "post"}>
+    <article className={className}>
       <header>
         {author ? <Avatar user={author} /> : <span className="avatar">?</span>}
         <div>
@@ -572,57 +596,19 @@ function PostCard({
             {author ? `${author.program} · rom ${author.room}` : "Flyttet ut"} · {formatStamp(post.createdAt)}
           </small>
         </div>
-        {post.pinned ? <span className="pin">Oppslag</span> : null}
+        {post.event ? <span className="pin event">Arrangement</span> : post.pinned ? <span className="pin">Oppslag</span> : null}
       </header>
-      <p>{post.body}</p>
-      <div className="post-actions">
-        <button type="button" className={liked ? "like on" : "like"} onClick={onLike}>
-          {liked ? "Likt" : "Lik"}
-          {post.likedBy.length > 0 ? ` · ${post.likedBy.length}` : ""}
-        </button>
-        <span className="comment-count">{commentLabel(post.comments.length)}</span>
-      </div>
-      {post.comments.length > 0 ? (
-        <ul className="comments">
-          {post.comments.map((comment) => {
-            const person = findUser(comment.authorId);
-            return (
-              <li key={comment.id} className="comment">
-                {person ? <Avatar user={person} small /> : <span className="avatar small">?</span>}
-                <div>
-                  <strong>
-                    {person?.name ?? "Tidligere beboer"}
-                    {comment.authorId === viewerId ? <em>Deg</em> : null}
-                  </strong>
-                  <p>{comment.body}</p>
-                  <time>{formatStamp(comment.createdAt)}</time>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+      <PostText body={post.body} />
+      {post.event ? (
+        <div className="post-actions">
+          <button type="button" className={going ? "skal on" : "skal"} aria-pressed={going} onClick={onToggleGoing}>
+            Skal
+          </button>
+          <span className="going">{goingLabel(post.going, viewerId)}</span>
+        </div>
       ) : null}
-      <form className="comment-form" onSubmit={submitComment}>
-        <label className="sr-only" htmlFor={`comment-${post.id}`}>
-          Skriv en kommentar
-        </label>
-        <input
-          id={`comment-${post.id}`}
-          value={draft}
-          placeholder="Skriv en kommentar"
-          onChange={(event) => setDraft(event.target.value)}
-        />
-        <button className="primary" type="submit" disabled={!draft.trim()}>
-          Kommenter
-        </button>
-      </form>
     </article>
   );
-}
-
-function commentLabel(count: number): string {
-  if (count === 1) return "1 kommentar";
-  return `${count} kommentarer`;
 }
 
 function ChatLine({ message, viewerId }: { message: Message; viewerId: string }) {

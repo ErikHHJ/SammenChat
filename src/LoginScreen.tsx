@@ -35,7 +35,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
         <ul className="brand-points">
           <li>
             <strong>Tavle</strong>
-            <span>Oppslag for studentbyen, for blokken din og for etasjen din. Du kan like og kommentere.</span>
+            <span>Oppslag for studentbyen, for blokken din og for etasjen din. Arrangementer merkes, og du kan si at du skal.</span>
           </li>
           <li>
             <strong>Chat</strong>

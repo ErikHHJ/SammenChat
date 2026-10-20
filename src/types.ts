@@ -19,12 +19,7 @@ export type Space = {
   memberIds: string[];
 };
 
-export type Comment = {
-  id: string;
-  authorId: string;
-  body: string;
-  createdAt: string;
-};
+export type PostKind = "post" | "announcement" | "event";
 
 export type Post = {
   id: string;
@@ -33,8 +28,8 @@ export type Post = {
   body: string;
   createdAt: string;
   pinned?: boolean;
-  likedBy: string[];
-  comments: Comment[];
+  event?: boolean;
+  going: string[];
 };
 
 export type Message = {
